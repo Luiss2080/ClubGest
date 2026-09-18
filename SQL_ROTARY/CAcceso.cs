@@ -24,11 +24,21 @@ namespace SQL_ROTARY
         #region "Constructores"
         public CAcceso()
         {
-            Servidor = "DESKTOP-S0REQAM\\SQLEXPRESS";
-            BaseDatos = "BD_ROTARY";
-            Usuario = "";
-            Password = "";
-            ModoMixto = false;
+            Configurar(ConexionConfig.Cargar());
+        }
+
+        public CAcceso(ConexionConfig config)
+        {
+            Configurar(config);
+        }
+
+        private void Configurar(ConexionConfig config)
+        {
+            Servidor = config.Servidor;
+            BaseDatos = config.BaseDatos;
+            Usuario = config.Usuario ?? "";
+            Password = config.Password ?? "";
+            ModoMixto = config.UsaAutenticacionSql;
             CadenaConexion = pCadenaConexion;
         }
         #endregion
@@ -36,63 +46,27 @@ namespace SQL_ROTARY
         #region "Propiedades"
         public string pServidor
         {
-            get
-            {
-                return Servidor;
-            }
-            set
-            {
-                Servidor = value;
-            }
+            get { return Servidor; }
+            set { Servidor = value; }
         }
 
         public string pBaseDatos
         {
-            get
-            {
-                return BaseDatos;
-            }
-            set
-            {
-                BaseDatos = value;
-            }
+            get { return BaseDatos; }
+            set { BaseDatos = value; }
         }
 
         public string pCadenaConexion
         {
             get
             {
-                if ((Servidor.Length != 0) && (BaseDatos.Length != 0))
+                return new ConexionConfig
                 {
-                    System.Text.StringBuilder strCadena = new System.Text.StringBuilder();
-                    if (ModoMixto == true)
-                    {
-                        strCadena.Append("data source=<SERVIDOR>;");
-                        strCadena.Append("initial catalog=<BASEDATOS>;password='';");
-                        strCadena.Append("persist security info=True;");
-                        strCadena.Append("user id=<USUARIO>;pwd=<PASSWORD>;packet size=4096");
-                        strCadena.Replace("<USUARIO>", this.Usuario);/// 'PARA REEMPLAZAR LOS VALORES DE strCadena
-                        strCadena.Replace("<SERVIDOR>", this.Servidor);/// 'PARA REEMPLAZAR LOS VALORES DE strCadena
-                        strCadena.Replace("<BASEDATOS>", this.BaseDatos);/// ' IDEM PARA BASE DE DATOS
-                        strCadena.Replace("<PASSWORD>", this.Password);/// 'IDEM PARA PASSWORD
-                    }
-                    else
-                    {
-                        ///CadenaConexion = "Data Source=PC-10AF49FB76BE\SQLEXPRESS;Initial Catalog=db_sipad;Integrated Security=True"
-                        strCadena.Append("data source=<SERVIDOR>;");
-                        strCadena.Append("initial catalog=<BASEDATOS>;");
-                        strCadena.Append("Integrated Security=True");
-                        strCadena.Replace("<SERVIDOR>", this.Servidor);/// 'PARA REEMPLAZAR LOS VALORES DE strCadena
-                        strCadena.Replace("<BASEDATOS>", this.BaseDatos);/// ' IDEM PARA BASE DE DATOS
-                    }
-                    return strCadena.ToString();
-                }
-                else
-                {
-                    System.Exception Ex = new System.Exception("No se puede establecer la cadena de conexi n");
-                    throw Ex;
-                    return "";
-                }
+                    Servidor = Servidor,
+                    BaseDatos = BaseDatos,
+                    Usuario = ModoMixto ? Usuario : null,
+                    Password = Password
+                }.CadenaConexion();
             }
             set
             {
