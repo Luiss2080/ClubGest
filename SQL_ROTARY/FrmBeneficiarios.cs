@@ -20,7 +20,7 @@ namespace SQL_ROTARY
 
         private void FrmBeneficiarios_Load(object sender, EventArgs e)
         {
-            GnvBeneficiarios.DataSource = obj.TraerDataTable("SPMOSTRARBENEFICIARIOS");
+            Cargador.Cargar(this, GnvBeneficiarios, obj, "SPMOSTRARBENEFICIARIOS");
 
         }
     }
