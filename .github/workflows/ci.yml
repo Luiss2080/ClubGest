@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  pruebas:
+    name: Pruebas de lógica (xunit)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - run: dotnet test SQL_ROTARY.Tests/SQL_ROTARY.Tests.csproj --configuration Release
+
+  compilacion:
+    name: Compilar aplicación WinForms (.NET Framework 4.7.2)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: microsoft/setup-msbuild@v2
+      - uses: NuGet/setup-nuget@v2
+      - run: nuget restore SQL_ROTARY.sln
+      - run: msbuild SQL_ROTARY.sln /p:Configuration=Release /m
