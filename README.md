@@ -1,4 +1,4 @@
-# <<NOMBRE>>
+# ClubGest
 
 Aplicación de escritorio (Windows Forms, .NET Framework 4.7.2) para **consultar** los registros de un club Rotary guardados en SQL Server: proyectos, eventos, recursos, finanzas, voluntarios, socios y beneficiarios.
 
