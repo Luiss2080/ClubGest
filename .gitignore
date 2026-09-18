@@ -1,0 +1,16 @@
+# Visual Studio / .NET
+.vs/
+bin/
+obj/
+*.user
+*.suo
+*.dtbcache.json
+TestResults/
+
+# Paquetes NuGet (se restauran con `nuget restore`)
+packages/
+
+# Secretos locales
+appsettings.local.json
+*.local.config
+.env
