@@ -20,7 +20,7 @@ namespace SQL_ROTARY
 
         private void FrmEventos_Load(object sender, EventArgs e)
         {
-            GnvEvento.DataSource = obj.TraerDataTable("SPMOSTRAREVENTO");
+            Cargador.Cargar(this, GnvEvento, obj, "SPMOSTRAREVENTO");
         }
 
         

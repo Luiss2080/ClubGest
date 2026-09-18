@@ -289,7 +289,7 @@
             this.Controls.Add(this.GnvProyecto);
             this.Name = "FrmProyecto";
             this.Text = "FrmProyecto";
-            this.Load += new System.EventHandler(this.Form1_Load);
+            this.Load += new System.EventHandler(this.FrmProyecto_Load);
             ((System.ComponentModel.ISupportInitialize)(this.GnvProyecto)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();

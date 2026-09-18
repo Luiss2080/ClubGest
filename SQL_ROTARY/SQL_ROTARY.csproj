@@ -55,12 +55,14 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CAcceso.cs" />
+    <Compile Include="Cargador.cs" />
     <Compile Include="ConexionConfig.cs" />
-    <Compile Include="Form1.cs">
+    <Compile Include="MensajesError.cs" />
+    <Compile Include="FrmProyecto.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Form1.Designer.cs">
-      <DependentUpon>Form1.cs</DependentUpon>
+    <Compile Include="FrmProyecto.Designer.cs">
+      <DependentUpon>FrmProyecto.cs</DependentUpon>
     </Compile>
     <Compile Include="FrmBeneficiarios.cs">
       <SubType>Form</SubType>
@@ -106,8 +108,8 @@
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <EmbeddedResource Include="Form1.resx">
-      <DependentUpon>Form1.cs</DependentUpon>
+    <EmbeddedResource Include="FrmProyecto.resx">
+      <DependentUpon>FrmProyecto.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="FrmBeneficiarios.resx">
       <DependentUpon>FrmBeneficiarios.cs</DependentUpon>

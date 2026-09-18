@@ -19,44 +19,58 @@ namespace SQL_ROTARY
 
         private void menuproyecto_Click(object sender, EventArgs e)
         {
-            FrmProyecto obj = new FrmProyecto();
-            obj.ShowDialog();
+            using (var obj = new FrmProyecto())
+            {
+                obj.ShowDialog(this);
+            }
         }
 
         private void menueventos_Click(object sender, EventArgs e)
         {
-            FrmEventos obj = new FrmEventos();
-            obj.ShowDialog();
+            using (var obj = new FrmEventos())
+            {
+                obj.ShowDialog(this);
+            }
         }
 
         private void menurecursos_Click(object sender, EventArgs e)
         {
-            FrmRecursos obj = new FrmRecursos();
-            obj.ShowDialog();
+            using (var obj = new FrmRecursos())
+            {
+                obj.ShowDialog(this);
+            }
         }
 
         private void menufinanzas_Click(object sender, EventArgs e)
         {
-            FrmFinanzas obj = new FrmFinanzas();
-            obj.ShowDialog();
+            using (var obj = new FrmFinanzas())
+            {
+                obj.ShowDialog(this);
+            }
         }
 
         private void menuvoluntarios_Click(object sender, EventArgs e)
         {
-            FrmVoluntarios obj = new FrmVoluntarios();
-            obj.ShowDialog();
+            using (var obj = new FrmVoluntarios())
+            {
+                obj.ShowDialog(this);
+            }
         }
 
         private void menusocios_Click(object sender, EventArgs e)
         {
-            FrmSocios obj = new FrmSocios();
-            obj.ShowDialog();
+            using (var obj = new FrmSocios())
+            {
+                obj.ShowDialog(this);
+            }
         }
 
         private void menubeneficiarios_Click(object sender, EventArgs e)
         {
-            FrmBeneficiarios obj = new FrmBeneficiarios();
-            obj.ShowDialog();
+            using (var obj = new FrmBeneficiarios())
+            {
+                obj.ShowDialog(this);
+            }
         }
 
         

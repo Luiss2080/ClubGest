@@ -18,9 +18,9 @@ namespace SQL_ROTARY
         }
         CAcceso obj = new CAcceso();
 
-        private void Form1_Load(object sender, EventArgs e)
+        private void FrmProyecto_Load(object sender, EventArgs e)
         {
-            GnvProyecto.DataSource = obj.TraerDataTable("SPMOSTRARPROYECTO");
+            Cargador.Cargar(this, GnvProyecto, obj, "SPMOSTRARPROYECTO");
 
         }
     }
