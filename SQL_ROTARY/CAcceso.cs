@@ -1,13 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data.SqlClient;
 using System.Data;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Data.SqlClient;
 
 namespace SQL_ROTARY
 {
+    /// <summary>
+    /// Acceso a datos por procedimientos almacenados. Cada operación abre y
+    /// cierra su propia conexión (using), salvo dentro de una transacción
+    /// iniciada con <see cref="IniciarTransaccion"/>, que mantiene su conexión
+    /// hasta Terminar/Abortar.
+    /// </summary>
     internal class CAcceso
     {
         #region "Declaracion de Variables"
@@ -17,8 +20,9 @@ namespace SQL_ROTARY
         protected string Usuario;
         protected string Password;
         protected bool ModoMixto;
-        protected SqlConnection mConexion;
-        protected System.Collections.Hashtable ColComandos = new System.Collections.Hashtable();
+        private readonly Dictionary<string, SqlParameter[]> _plantillas =
+            new Dictionary<string, SqlParameter[]>(StringComparer.OrdinalIgnoreCase);
+        private readonly object _candado = new object();
         #endregion
 
         #region "Constructores"
@@ -73,249 +77,218 @@ namespace SQL_ROTARY
                 CadenaConexion = value;
             }
         }
-
         #endregion
+
+        #region "Parametros (logica pura, probada en SQL_ROTARY.Tests)"
+        /// <summary>
+        /// Asigna args a los parámetros de entrada en orden. El parámetro 0 es
+        /// @RETURN_VALUE en los procedimientos almacenados. Los argumentos
+        /// faltantes o null se envían como DBNull (un valor null en un
+        /// SqlParameter significa "no enviado" y hace fallar la llamada).
+        /// </summary>
+        internal static void AsignarParametros(SqlCommand com, object[] args)
+        {
+            args = args ?? new object[0];
+            for (int i = 1; i < com.Parameters.Count; i++)
+            {
+                SqlParameter p = com.Parameters[i];
+                object v = (i - 1 < args.Length) ? args[i - 1] : null;
+                p.Value = v ?? DBNull.Value;
+            }
+        }
+
+        /// <summary>
+        /// Copia los valores de parámetros de salida a la posición
+        /// correspondiente de args (parámetro i -> args[i-1]).
+        /// </summary>
+        internal static void RecogerSalidas(SqlCommand com, object[] args)
+        {
+            if (args == null) return;
+            for (int i = 1; i < com.Parameters.Count; i++)
+            {
+                SqlParameter p = com.Parameters[i];
+                if ((p.Direction == ParameterDirection.InputOutput || p.Direction == ParameterDirection.Output)
+                    && i - 1 < args.Length)
+                    args[i - 1] = p.Value;
+            }
+        }
+
+        /// <summary>Último valor de salida del comando, o null si no hay.</summary>
+        internal static object ValorDeSalida(SqlCommand com)
+        {
+            object resp = null;
+            foreach (SqlParameter p in com.Parameters)
+                if (p.Direction == ParameterDirection.InputOutput || p.Direction == ParameterDirection.Output)
+                    resp = p.Value;
+            return resp;
+        }
+        #endregion
+
         #region "Privadas"
-        /// <summary>
-        /// Crea u obtiene un objeto para conectarse a la base de dtaos.
-        /// </summary>
-        protected SqlConnection CrearConexion(string CadenaConexion)
+        private SqlCommand CrearComando(string procedimiento, SqlConnection con, SqlTransaction tran)
         {
-            return (SqlConnection)new System.Data.SqlClient.SqlConnection(CadenaConexion);
+            if (string.IsNullOrWhiteSpace(procedimiento))
+                throw new ArgumentException("Falta el nombre del procedimiento almacenado.", "procedimiento");
+
+            var com = new SqlCommand(procedimiento, con, tran) { CommandType = CommandType.StoredProcedure };
+            SqlParameter[] plantilla;
+            lock (_candado)
+                _plantillas.TryGetValue(procedimiento, out plantilla);
+
+            if (plantilla == null)
+            {
+                SqlCommandBuilder.DeriveParameters(com);
+                var copia = new SqlParameter[com.Parameters.Count];
+                for (int i = 0; i < copia.Length; i++)
+                    copia[i] = (SqlParameter)((ICloneable)com.Parameters[i]).Clone();
+                lock (_candado)
+                    _plantillas[procedimiento] = copia;
+            }
+            else
+            {
+                foreach (SqlParameter p in plantilla)
+                    com.Parameters.Add((SqlParameter)((ICloneable)p).Clone());
+            }
+            return com;
         }
 
-        protected SqlConnection Conexion
+        /// <summary>Ejecuta f con la conexión de la transacción activa o con una propia.</summary>
+        private T Usar<T>(Func<SqlConnection, SqlTransaction, T> f)
         {
-            get
+            if (mTransaccion != null)
+                return f(mTransaccion.Connection, mTransaccion);
+            using (var con = new SqlConnection(pCadenaConexion))
             {
-                if (null == mConexion)
-                {
-                    mConexion = CrearConexion(pCadenaConexion);
-                }
-                if (mConexion.State != ConnectionState.Open)
-                    mConexion.Open();
-                return mConexion;
+                con.Open();
+                return f(con, null);
             }
         }
         #endregion
+
         #region "Lecturas"
-        /// <summary>
-        /// Obtiene un DataSet a partir de un Procedimiento Almacenado.
-        /// </summary>
-        protected SqlCommand Comando(string ProcedimientoAlmacenado)
+        /// <summary>Obtiene un DataSet a partir de un procedimiento almacenado y sus parámetros.</summary>
+        public DataSet TraerDataset(string procedimiento, params object[] args)
         {
-            SqlCommand Com;
-            if (ColComandos.Contains(ProcedimientoAlmacenado))
-                Com = (SqlCommand)ColComandos[ProcedimientoAlmacenado];
-            else
+            return Usar((con, tran) =>
             {
-                SqlConnection Con2 = new SqlConnection(pCadenaConexion);
-                Con2.Open();
-                Com = new SqlCommand(ProcedimientoAlmacenado, Con2);
-                Com.CommandType = CommandType.StoredProcedure;
-                SqlCommandBuilder.DeriveParameters(Com);
-                Con2.Close();
-                Con2.Dispose();
-                ColComandos.Add(ProcedimientoAlmacenado, Com);
-            }
-            Com.Connection = (SqlConnection)this.Conexion;
-            Com.Transaction = (SqlTransaction)this.mTransaccion;
-            return (SqlCommand)Com;
+                using (SqlCommand com = CrearComando(procedimiento, con, tran))
+                {
+                    AsignarParametros(com, args);
+                    using (var da = new SqlDataAdapter(com))
+                    {
+                        var ds = new DataSet();
+                        da.Fill(ds);
+                        return ds;
+                    }
+                }
+            });
         }
 
-        protected SqlCommand Comando(string ProcedimientoAlmacenado, SqlTransaction tran)
+        /// <summary>Obtiene la primera tabla del resultado de un procedimiento almacenado.</summary>
+        public DataTable TraerDataTable(string procedimiento, params object[] args)
         {
-            SqlCommand Com;
-            if (ColComandos.Contains(ProcedimientoAlmacenado))
-                Com = (SqlCommand)ColComandos[ProcedimientoAlmacenado];
-            else
+            DataSet ds = TraerDataset(procedimiento, args);
+            if (ds.Tables.Count == 0)
+                return new DataTable();
+            return ds.Tables[0].Copy();
+        }
+
+        /// <summary>Ejecuta el procedimiento y devuelve su último parámetro de salida.</summary>
+        public object TraerValor(string procedimiento, params object[] args)
+        {
+            return Usar((con, tran) =>
             {
-                SqlConnection Con2 = new SqlConnection(pCadenaConexion);
-                Con2.Open();
-                Com = new SqlCommand(ProcedimientoAlmacenado, Con2);
-                Com.CommandType = CommandType.StoredProcedure;
-                SqlCommandBuilder.DeriveParameters(Com);
-                Con2.Close();
-                Con2.Dispose();
-                ColComandos.Add(ProcedimientoAlmacenado, Com);
-
-            }
-            Com.Connection = tran.Connection;
-            Com.Transaction = tran;
-            return (SqlCommand)Com;
-        }
-
-        protected void CargarParametros(SqlCommand Com, System.Object[] Args)
-        {
-            int Limite = Com.Parameters.Count;
-            for (int i = 1; i < Com.Parameters.Count; i++)
-            {
-                SqlParameter P = (SqlParameter)Com.Parameters[i];
-                if (i <= Args.Length)
-                    P.Value = Args[i - 1];
-                else
-                    P.Value = null;
-            }
-        }
-
-        protected SqlDataAdapter CrearDataAdapter(string ProcedimientoAlmacenado, params System.Object[] Args)
-        {
-            SqlDataAdapter Da = new SqlDataAdapter((SqlCommand)Comando(ProcedimientoAlmacenado));
-            if (Args.Length != 0)
-                CargarParametros(Da.SelectCommand, Args);
-            return (SqlDataAdapter)Da;
-        }
-
-
-        public System.Data.DataSet TraerDataset(string ProcedimientoAlmacenado)
-        {
-            DataSet mDataSet = new DataSet();
-            this.CrearDataAdapter(ProcedimientoAlmacenado).Fill(mDataSet);
-            return mDataSet;
-        }
-        /// <summary>
-        /// Obtiene un DataSet a partir de un Procedimiento Almacenado y sus par metros.
-        /// </summary>
-        public System.Data.DataSet TraerDataset(string ProcedimientoAlmacenado, params System.Object[] Args)
-        {
-            DataSet mDataSet = new DataSet();
-            this.CrearDataAdapter(ProcedimientoAlmacenado, Args).Fill(mDataSet);
-            return mDataSet;
-        }
-        /// <summary>
-        /// Obtiene un DataTable a partir de un Procedimiento Almacenado.
-        /// </summary>
-
-        public System.Data.DataTable TraerDataTable(string ProcedimientoAlmacenado)
-        {
-            return TraerDataset(ProcedimientoAlmacenado).Tables[0].Copy();
-        }
-        /// <summary>
-        /// Obtiene un DataSet a partir de un Procedimiento Almacenado y sus par metros.
-        /// </summary>
-        public System.Data.DataTable TraerDataTable(string ProcedimientoAlmacenado, System.Object[] Args)
-        {
-            return TraerDataset(ProcedimientoAlmacenado, Args).Tables[0].Copy();
-        }
-        /// <summary>
-        /// Obtiene un Valor a partir de un Procedimiento Almacenado.
-        /// </summary>
-        public System.Object TraerValor(string ProcedimientoAlmacenado)
-        {
-            SqlCommand Com = Comando(ProcedimientoAlmacenado);
-            Com.ExecuteNonQuery();
-            System.Object Resp = null;
-            foreach (SqlParameter Par in Com.Parameters)
-                if (Par.Direction == ParameterDirection.InputOutput || Par.Direction == ParameterDirection.Output)
-                    Resp = Par.Value;
-            return Resp;
-        }
-        /// <summary>
-        /// Obtiene un Valor a partir de un Procedimiento Almacenado, y sus par metros.
-        /// </summary>
-        public System.Object TraerValor(string ProcedimientoAlmacenado, params System.Object[] Args)
-        {
-            SqlCommand Com = Comando(ProcedimientoAlmacenado);
-            CargarParametros(Com, Args);
-            Com.ExecuteNonQuery();
-            System.Object Resp = null;
-            foreach (SqlParameter Par in Com.Parameters)
-                if (Par.Direction == ParameterDirection.InputOutput || Par.Direction == ParameterDirection.Output)
-                    Resp = Par.Value;
-            return Resp;
+                using (SqlCommand com = CrearComando(procedimiento, con, tran))
+                {
+                    AsignarParametros(com, args);
+                    com.ExecuteNonQuery();
+                    return ValorDeSalida(com);
+                }
+            });
         }
         #endregion
+
         #region "Acciones"
-        /// <summary>
-        /// Ejecuta un Procedimiento Almacenado en la base.
-        /// </summary>
-        public int Ejecutar(string ProcedimientoAlmacenado)
+        /// <summary>Ejecuta un procedimiento y copia los parámetros de salida en args.</summary>
+        public int Ejecutar(string procedimiento, params object[] args)
         {
-            return Comando(ProcedimientoAlmacenado).ExecuteNonQuery();
-        }
-        /// <summary>
-        /// Ejecuta un Procedimiento Almacenado en la base, utilizando los par metros.
-        /// </summary>
-        public int Ejecutar(string ProcedimientoAlmacenado, System.Object[] Args)
-        {
-            SqlCommand Com = Comando(ProcedimientoAlmacenado);
-            CargarParametros(Com, Args);
-            int Resp = Com.ExecuteNonQuery();
-            for (int i = 0; i < Com.Parameters.Count - 1; i++)
+            return Usar((con, tran) =>
             {
-                SqlParameter Par = (SqlParameter)Com.Parameters[i];
-                if (Par.Direction == ParameterDirection.InputOutput || Par.Direction == ParameterDirection.Output)
-                    Args.SetValue(Par.Value, i);
-            }
-            return Resp;
-        }
-        public int Ejecutar(string ProcedimientoAlmacenado, System.Object[] Args, SqlTransaction tran)
-        {
-            SqlCommand Com = Comando(ProcedimientoAlmacenado, tran);
-            CargarParametros(Com, Args);
-            int Resp = Com.ExecuteNonQuery();
-            for (int i = 0; i < Com.Parameters.Count; i++)
-            {
-                SqlParameter Par = (SqlParameter)Com.Parameters[i];
-                if (Par.Direction == ParameterDirection.InputOutput || Par.Direction == ParameterDirection.Output)
-                    Args.SetValue(Par.Value, i);
-            }
-            return Resp;
+                using (SqlCommand com = CrearComando(procedimiento, con, tran))
+                {
+                    AsignarParametros(com, args);
+                    int filas = com.ExecuteNonQuery();
+                    RecogerSalidas(com, args);
+                    return filas;
+                }
+            });
         }
 
+        public int Ejecutar(string procedimiento, object[] args, SqlTransaction tran)
+        {
+            if (tran == null) throw new ArgumentNullException("tran");
+            using (SqlCommand com = CrearComando(procedimiento, tran.Connection, tran))
+            {
+                AsignarParametros(com, args);
+                int filas = com.ExecuteNonQuery();
+                RecogerSalidas(com, args);
+                return filas;
+            }
+        }
         #endregion
+
         #region "Transacciones"
         protected SqlTransaction mTransaccion;
         protected bool EnTransaccion = false;
-        /// <summary>
-        /// Comienza una Transacci n en la base en uso.
-        /// </summary>
+
+        /// <summary>Comienza una transacción. Debe cerrarse con Terminar o Abortar.</summary>
         public SqlTransaction IniciarTransaccion()
         {
-            SqlConnection oCon = new SqlConnection();
-            oCon = this.CrearConexion(pCadenaConexion);
-            oCon.Open();
-            mTransaccion = oCon.BeginTransaction();
+            if (EnTransaccion)
+                throw new InvalidOperationException("Ya hay una transacción activa.");
+            var con = new SqlConnection(pCadenaConexion);
+            try
+            {
+                con.Open();
+                mTransaccion = con.BeginTransaction();
+            }
+            catch
+            {
+                con.Dispose();
+                throw;
+            }
             EnTransaccion = true;
             return mTransaccion;
         }
 
-        /// <summary>
-        /// Confirma la transacci n activa.
-        /// </summary>
+        /// <summary>Confirma la transacción activa y libera su conexión.</summary>
         public void TerminarTransaccion()
         {
-            try
-            {
-                mTransaccion.Commit();
-            }
-            catch (System.Exception Ex)
-            {
-                throw Ex;
-            }
-            finally
-            {
-                mTransaccion = null;
-                EnTransaccion = false;
-            }
+            CerrarTransaccion(true);
         }
-        /// <summary>
-        /// Cancela la transacci n activa.
-        /// </summary>
+
+        /// <summary>Cancela la transacción activa y libera su conexión.</summary>
         public void AbortarTransaccion()
         {
+            CerrarTransaccion(false);
+        }
+
+        private void CerrarTransaccion(bool confirmar)
+        {
+            if (mTransaccion == null)
+                throw new InvalidOperationException("No hay una transacción activa.");
+            SqlTransaction t = mTransaccion;
+            SqlConnection con = t.Connection;
             try
             {
-                mTransaccion.Rollback();
-            }
-            catch (System.Exception Ex)
-            {
-                throw Ex;
+                if (confirmar) t.Commit(); else t.Rollback();
             }
             finally
             {
                 mTransaccion = null;
                 EnTransaccion = false;
+                t.Dispose();
+                if (con != null) con.Dispose();
             }
         }
         #endregion
