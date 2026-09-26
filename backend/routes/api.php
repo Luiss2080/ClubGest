@@ -34,8 +34,8 @@ Route::middleware('auth:sanctum')->group(function () {
         ]);
     });
 
-    // Próximas rutas a programar:
-    // Route::apiResource('projects', ProjectController::class);
-    // Route::apiResource('donations', DonationController::class);
-    // Route::apiResource('activities', ActivityController::class);
+    // Gestión del Negocio (Rutas Protegidas)
+    Route::apiResource('projects', \App\Http\Controllers\Api\ProjectController::class);
+    Route::apiResource('donations', \App\Http\Controllers\Api\DonationController::class);
+    Route::apiResource('activities', \App\Http\Controllers\Api\ActivityController::class);
 });
