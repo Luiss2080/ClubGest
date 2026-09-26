@@ -1,17 +1,19 @@
-import React from 'react';
+'use client';
+
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { AIChatbot } from '@/components/ui/AIChatbot';
-
-export const metadata = {
-  title: 'ClubGest Solidario | Transparencia e Impacto Social',
-  description: 'Únete a nuestra comunidad solidaria. Descubre nuestros proyectos, la agenda de actividades y realiza donaciones transparentes para transformar realidades.',
-  keywords: 'ONG, Donaciones, Impacto Social, Voluntariado, Transparencia'
-};
+import { CheckoutModal } from '@/components/donations/CheckoutModal';
 
 export default function LandingPage() {
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+
   return (
     <div className="min-h-screen bg-slate-50 selection:bg-blue-200 font-sans">
       
+      {/* Modal de Pagos Stripe Inyectado */}
+      <CheckoutModal isOpen={isCheckoutOpen} onClose={() => setIsCheckoutOpen(false)} />
+
       {/* Módulo Chatbot IA */}
       <AIChatbot />
 
@@ -53,9 +55,13 @@ export default function LandingPage() {
           </p>
           
           <div className="mt-12 flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="#dona-ahora" className="bg-blue-600 text-white font-bold px-8 py-4 rounded-full shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 hover:-translate-y-1 hover:bg-blue-700 transition-all duration-300">
+            {/* Botón Modificado para Activar el Modal de Pagos (Paso Final) */}
+            <button 
+              onClick={() => setIsCheckoutOpen(true)}
+              className="bg-blue-600 text-white font-bold px-8 py-4 rounded-full shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 hover:-translate-y-1 hover:bg-blue-700 transition-all duration-300"
+            >
               Quiero Donar
-            </Link>
+            </button>
             <Link href="#proyectos" className="bg-white text-slate-700 font-bold px-8 py-4 rounded-full shadow-sm border border-slate-200 hover:shadow-md hover:-translate-y-1 hover:border-blue-200 hover:text-blue-600 transition-all duration-300">
               Ver Causas Activas
             </Link>
