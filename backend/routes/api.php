@@ -16,8 +16,11 @@ use App\Http\Controllers\Api\ActivityController;
 // Rutas Públicas
 Route::post('/login', [AuthController::class, 'login']);
 
-// PASO 3: Exponemos la ruta de Checkout para que la Landing Page (Pública) pueda recibir donaciones
+// Exponemos la ruta de Checkout para que la Landing Page (Pública) pueda iniciar donaciones
 Route::post('/donations/checkout', [DonationController::class, 'checkout']);
+
+// PASO 6: Ruta pública sin protección CSRF ni Auth para que los servidores de Stripe puedan hacer "ping"
+Route::post('/webhooks/stripe', [\App\Http\Controllers\Api\WebhookController::class, 'handleStripeWebhook']);
 
 // Rutas Protegidas por Sanctum (Solo Voluntarios/Admins logueados)
 Route::middleware('auth:sanctum')->group(function () {
