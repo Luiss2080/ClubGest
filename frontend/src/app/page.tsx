@@ -1,5 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
+import { AIChatbot } from '@/components/ui/AIChatbot';
 
 export const metadata = {
   title: 'ClubGest Solidario | Transparencia e Impacto Social',
@@ -11,6 +12,9 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-slate-50 selection:bg-blue-200 font-sans">
       
+      {/* Módulo Chatbot IA */}
+      <AIChatbot />
+
       {/* Navbar: Efecto Glassmorphism Premium */}
       <nav className="fixed w-full z-50 bg-white/80 backdrop-blur-md border-b border-slate-100 transition-all">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
