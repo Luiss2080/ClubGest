@@ -26,10 +26,15 @@ export default function ProjectsPage() {
     fetchProjects();
   }, []);
 
+  const [searchTerm, setSearchTerm] = useState('');
+
   // Actualiza el estado reactivo sin recargar la página cuando el Modal guarda un registro
   const handleProjectCreated = (newProject: Project) => {
     setProjects([newProject, ...projects]);
   };
+
+  // Filtrado reactivo en tiempo real
+  const filteredProjects = projects.filter(p => p.title.toLowerCase().includes(searchTerm.toLowerCase()));
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -37,8 +42,8 @@ export default function ProjectsPage() {
       {/* Cabecera / Sección */}
       <div className="flex justify-between items-center">
         <div>
-            <h1 className="text-2xl font-bold text-slate-800">Directorio de Proyectos</h1>
-            <p className="text-slate-500 text-sm">Gestiona las causas solidarias activas</p>
+            <h1 className="text-2xl font-bold text-slate-800 dark:text-white">Directorio de Proyectos</h1>
+            <p className="text-slate-500 dark:text-slate-400 text-sm">Gestiona las causas solidarias activas</p>
         </div>
         <button 
           onClick={() => setIsModalOpen(true)}
@@ -46,6 +51,18 @@ export default function ProjectsPage() {
         >
           <span>➕</span> Nuevo Proyecto
         </button>
+      </div>
+
+      {/* Barra de Búsqueda Interactiva */}
+      <div className="relative w-full md:w-1/2 lg:w-1/3">
+        <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">🔍</span>
+        <input 
+          type="text" 
+          placeholder="Buscar proyecto por nombre..." 
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full pl-10 pr-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-700 dark:text-slate-200 transition-all shadow-sm"
+        />
       </div>
 
       {/* Inyección del Componente Modular Modal */}

@@ -3,10 +3,12 @@
 import React, { useEffect, useState } from 'react';
 import api from '@/lib/axios';
 import { Donation } from '@/types';
+import { ExportModal } from '@/components/donations/ExportModal';
 
 export default function DonationsPage() {
     const [donations, setDonations] = useState<Donation[]>([]);
     const [loading, setLoading] = useState(true);
+    const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
     useEffect(() => {
         api.get('/donations')
@@ -18,10 +20,12 @@ export default function DonationsPage() {
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-700">
             
+            {/* Modal de Exportación Inyectado */}
+            <ExportModal isOpen={isExportModalOpen} onClose={() => setIsExportModalOpen(false)} />
+
             {/* Header Dinámico con Animaciones CSS puras */}
             <header className="flex flex-col md:flex-row justify-between items-center bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 p-8 rounded-[2rem] text-white shadow-2xl shadow-blue-500/20 relative overflow-hidden group">
                 
-                {/* Elementos decorativos animados */}
                 <div className="absolute -right-20 -top-20 w-64 h-64 bg-white/10 rounded-full blur-3xl animate-float"></div>
                 <div className="absolute left-10 -bottom-20 w-48 h-48 bg-teal-400/20 rounded-full blur-2xl animate-pulse-slow"></div>
                 
@@ -32,9 +36,17 @@ export default function DonationsPage() {
                     <p className="text-blue-100 mt-2 font-medium text-lg">Control absoluto y transparente de ingresos solidarios.</p>
                 </div>
                 
-                <button className="relative z-10 bg-white/10 backdrop-blur-md border border-white/20 text-white px-8 py-4 rounded-2xl font-bold hover:bg-white hover:text-blue-600 hover:scale-105 transition-all duration-300 shadow-xl">
-                    + Registrar Ingreso
-                </button>
+                <div className="relative z-10 flex gap-4">
+                    <button 
+                        onClick={() => setIsExportModalOpen(true)}
+                        className="bg-white/10 backdrop-blur-md border border-white/20 text-white px-6 py-4 rounded-2xl font-bold hover:bg-white hover:text-blue-600 transition-all duration-300"
+                    >
+                        📥 Exportar
+                    </button>
+                    <button className="bg-white text-blue-600 px-8 py-4 rounded-2xl font-bold hover:scale-105 transition-transform duration-300 shadow-xl">
+                        + Registrar Ingreso
+                    </button>
+                </div>
             </header>
             
             {/* Widgets Estadísticos (Glassmorphism) */}
