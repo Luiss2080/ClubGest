@@ -3,48 +3,43 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use App\Http\Requests\StoreProjectRequest;
+use App\Services\ProjectService;
 use Illuminate\Http\JsonResponse;
-use App\Models\Project;
+use Exception;
 
-/**
- * ProjectController
- * Maneja el listado y creación de proyectos/causas solidarias.
- */
 class ProjectController extends Controller
 {
-    /**
-     * Lista todos los proyectos de impacto social.
-     */
+    private ProjectService $projectService;
+
+    public function __construct(ProjectService $projectService)
+    {
+        $this->projectService = $projectService;
+    }
+
     public function index(): JsonResponse
     {
-        // En una app real, aquí usaríamos $this->projectService->getAll()
-        $projects = Project::orderBy('created_at', 'desc')->get();
-
         return response()->json([
             'success' => true,
-            'message' => 'Proyectos obtenidos exitosamente',
-            'data' => $projects
+            'data' => $this->projectService->getAllProjects()
         ], 200);
     }
 
-    /**
-     * Crea un nuevo proyecto.
-     */
-    public function store(Request $request): JsonResponse
+    public function store(StoreProjectRequest $request): JsonResponse
     {
-        $data = $request->validate([
-            'title' => 'required|string|max:200',
-            'description' => 'nullable|string',
-            'target_budget' => 'required|numeric|min:0'
-        ]);
-
-        $project = Project::create($data);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Proyecto creado exitosamente',
-            'data' => $project
-        ], 201);
+        try {
+            $project = $this->projectService->createProject($request->validated());
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Proyecto registrado exitosamente.',
+                'data' => $project
+            ], 201);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 400);
+        }
     }
 }

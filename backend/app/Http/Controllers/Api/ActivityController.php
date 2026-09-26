@@ -3,52 +3,43 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use App\Http\Requests\StoreActivityRequest;
+use App\Services\ActivityService;
 use Illuminate\Http\JsonResponse;
-use App\Models\Activity;
+use Exception;
 
-/**
- * Controlador de Actividades de Impacto Social
- */
 class ActivityController extends Controller
 {
-    /**
-     * Lista las próximas actividades agendadas.
-     */
+    private ActivityService $activityService;
+
+    public function __construct(ActivityService $activityService)
+    {
+        $this->activityService = $activityService;
+    }
+
     public function index(): JsonResponse
     {
-        // Eager loading del proyecto asociado
-        $activities = Activity::with('project')
-            ->where('scheduled_at', '>=', now())
-            ->orderBy('scheduled_at', 'asc')
-            ->get();
-
         return response()->json([
             'success' => true,
-            'data' => $activities
+            'data' => $this->activityService->getUpcomingActivities()
         ], 200);
     }
 
-    /**
-     * Agenda una nueva actividad.
-     */
-    public function store(Request $request): JsonResponse
+    public function store(StoreActivityRequest $request): JsonResponse
     {
-        $data = $request->validate([
-            'project_id' => 'required|exists:projects,id',
-            'name' => 'required|string|max:200',
-            'scheduled_at' => 'required|date|after:today',
-            'location' => 'nullable|string|max:255',
-            'type' => 'required|in:fundraising,social_impact,other',
-            'status' => 'required|in:planned,in_progress,finished,cancelled'
-        ]);
+        try {
+            $activity = $this->activityService->createActivity($request->validated());
 
-        $activity = Activity::create($data);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Actividad agendada con éxito.',
-            'data' => $activity
-        ], 201);
+            return response()->json([
+                'success' => true,
+                'message' => 'Actividad agendada con éxito.',
+                'data' => $activity
+            ], 201);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 400);
+        }
     }
 }
