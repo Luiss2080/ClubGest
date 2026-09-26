@@ -28,11 +28,15 @@ class ProjectController extends Controller
     public function store(StoreProjectRequest $request): JsonResponse
     {
         try {
-            $project = $this->projectService->createProject($request->validated());
+            // PASO 3: Pasamos los datos validados y el archivo crudo extraído de la petición.
+            $project = $this->projectService->createProject(
+                $request->validated(),
+                $request->file('image')
+            );
             
             return response()->json([
                 'success' => true,
-                'message' => 'Proyecto registrado exitosamente.',
+                'message' => 'Proyecto y portada registrados exitosamente.',
                 'data' => $project
             ], 201);
         } catch (Exception $e) {

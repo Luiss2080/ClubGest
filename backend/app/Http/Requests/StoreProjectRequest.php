@@ -17,7 +17,10 @@ class StoreProjectRequest extends FormRequest
             'title' => 'required|string|max:200',
             'description' => 'nullable|string',
             'target_budget' => 'required|numeric|min:0',
-            'status' => 'nullable|in:active,completed,cancelled'
+            'status' => 'nullable|in:active,completed,cancelled',
+            
+            // PASO 1: Validación estricta de archivos para evitar vulnerabilidades de subida de scripts maliciosos.
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048'
         ];
     }
 }

@@ -16,8 +16,21 @@ class ProjectService
         return Project::orderBy('created_at', 'desc')->get();
     }
 
-    public function createProject(array $data): Project
+    /**
+     * Regla de Negocio: Creación de proyecto manejando archivos adjuntos (Imágenes).
+     */
+    public function createProject(array $data, $imageFile = null): Project
     {
+        // PASO 2: Si el controlador nos manda una imagen, la guardamos en el disco.
+        if ($imageFile) {
+            // Guarda el archivo de forma segura en `storage/app/public/projects`
+            // Genera un nombre único (hash) automáticamente para evitar sobrescribir imágenes con el mismo nombre.
+            $path = $imageFile->store('projects', 'public');
+            
+            // Adjuntamos la ruta generada al array de datos para que se guarde en la BD.
+            $data['image_path'] = $path;
+        }
+
         return Project::create($data);
     }
 
