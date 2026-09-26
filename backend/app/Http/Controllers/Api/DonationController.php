@@ -3,53 +3,65 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use App\Http\Requests\StoreDonationRequest;
+use App\Services\DonationService;
 use Illuminate\Http\JsonResponse;
-use App\Models\Donation;
+use Exception;
 
 /**
- * Controlador de Donaciones
- * Gestiona de manera estricta el registro financiero de la ONG.
+ * Controlador de Donaciones (Capa de Presentación Extremadamente Limpia)
  */
 class DonationController extends Controller
 {
-    /**
-     * Lista todas las donaciones con eager loading para evitar consultas N+1.
-     */
+    private DonationService $donationService;
+
+    // Inyección del Servicio
+    public function __construct(DonationService $donationService)
+    {
+        $this->donationService = $donationService;
+    }
+
     public function index(): JsonResponse
     {
-        // Aplicamos Eager Loading ('sponsor', 'project') cumpliendo la regla db-admin-skill
-        $donations = Donation::with(['sponsor', 'project'])
-            ->orderBy('donation_date', 'desc')
-            ->get();
-
         return response()->json([
             'success' => true,
-            'data' => $donations
+            'data' => $this->donationService->getAllDonations()
         ], 200);
     }
 
-    /**
-     * Registra el ingreso de una nueva donación.
-     */
-    public function store(Request $request): JsonResponse
+    public function store(StoreDonationRequest $request): JsonResponse
     {
-        // Sanitización y Validación estricta (qa-security-skill)
-        $data = $request->validate([
-            'sponsor_id' => 'required|exists:sponsors,id',
-            'project_id' => 'nullable|exists:projects,id',
-            'activity_id' => 'nullable|exists:activities,id',
-            'amount' => 'required|numeric|min:0.01',
-            'currency' => 'nullable|string|size:3',
-            'donation_date' => 'required|date'
-        ]);
+        try {
+            // El request ya viene validado automáticamente por StoreDonationRequest
+            $donation = $this->donationService->createDonation($request->validated());
 
-        $donation = Donation::create($data);
+            return response()->json([
+                'success' => true,
+                'message' => 'Donación registrada correctamente.',
+                'data' => $donation
+            ], 201);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Donación registrada en el sistema de manera segura.',
-            'data' => $donation
-        ], 201);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 400); // Bad Request por regla de negocio
+        }
+    }
+
+    public function destroy(int $id): JsonResponse
+    {
+        try {
+            $this->donationService->deleteDonation($id);
+            return response()->json([
+                'success' => true,
+                'message' => 'Donación eliminada (Soft Delete).'
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No se encontró la donación.'
+            ], 404);
+        }
     }
 }
