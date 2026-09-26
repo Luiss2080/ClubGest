@@ -6,20 +6,24 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('activities', function (Blueprint $table) {
             $table->id();
+            // Integridad referencial estricta
+            $table->foreignId('project_id')->constrained()->cascadeOnUpdate()->restrictOnDelete();
+            
+            $table->string('name', 200)->index();
+            $table->dateTime('scheduled_at')->index();
+            $table->string('location', 255)->nullable();
+            $table->enum('type', ['fundraising', 'social_impact', 'other'])->default('social_impact')->index();
+            $table->enum('status', ['planned', 'in_progress', 'finished', 'cancelled'])->default('planned')->index();
+            
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('activities');
