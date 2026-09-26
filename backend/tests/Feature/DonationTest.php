@@ -19,8 +19,8 @@ class DonationTest extends TestCase
     {
         // 1. Arrange: Preparamos el entorno (Sanctum User + Sponsor)
         $user = User::factory()->create();
-        $sponsor = Sponsor::factory()->create(['name' => 'TechCorp Solidario']);
-        $project = Project::factory()->create(['status' => 'active']);
+        $sponsor = Sponsor::create(['name' => 'TechCorp Solidario', 'email' => 'test@test.com', 'type' => 'corporate']);
+        $project = Project::create(['title' => 'Proyecto Test', 'target_budget' => 5000, 'status' => 'active']);
 
         $payload = [
             'sponsor_id' => $sponsor->id,
