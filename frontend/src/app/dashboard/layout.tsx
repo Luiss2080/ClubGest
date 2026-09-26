@@ -1,7 +1,7 @@
-'use client';
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import { CommandPalette } from '@/components/ui/CommandPalette';
 import api from '@/lib/axios';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -55,7 +55,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
             <main className="flex-1 flex flex-col h-screen overflow-hidden">
                 <header className="h-16 bg-white dark:bg-slate-900 shadow-sm flex items-center justify-between px-8 border-b border-slate-100 dark:border-slate-800 transition-colors duration-300">
-                    <h2 className="text-lg font-bold text-slate-700 dark:text-slate-200">Panel de Control</h2>
+                    <div className="flex items-center gap-4">
+                        <h2 className="text-lg font-bold text-slate-700 dark:text-slate-200 hidden md:block">Panel de Control</h2>
+                        {/* Atajo Visual del Buscador */}
+                        <div className="bg-slate-100 dark:bg-slate-800 text-slate-400 text-xs px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 flex items-center gap-2 cursor-pointer hover:bg-slate-200 transition-colors">
+                            <span>🔍 Buscar...</span>
+                            <span className="font-mono bg-white dark:bg-slate-700 px-1.5 rounded shadow-sm">Ctrl K</span>
+                        </div>
+                    </div>
+                    
                     <div className="flex items-center gap-6">
                         <ThemeToggle />
                         <Link href="/dashboard/profile" className="flex items-center gap-3 group">
@@ -68,6 +76,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         </Link>
                     </div>
                 </header>
+                
+                {/* Paleta de Comandos Global */}
+                <CommandPalette />
+
                 <div className="flex-1 overflow-y-auto p-8 bg-slate-50 dark:bg-slate-900">
                     {children}
                 </div>
