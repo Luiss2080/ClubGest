@@ -59,4 +59,21 @@ class DonationController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * PASO 9: Endpoint para descargar el reporte CSV (Auditoría Financiera)
+     */
+    public function exportCSV(\App\Services\ReportService $reportService)
+    {
+        try {
+            $csvContent = $reportService->generateDonationsCSV();
+            
+            // Retornamos una respuesta binaria que forzará al navegador a descargar el archivo
+            return response($csvContent)
+                ->header('Content-Type', 'text/csv; charset=UTF-8')
+                ->header('Content-Disposition', 'attachment; filename="Reporte_Donaciones_' . now()->format('Y-m-d') . '.csv"');
+        } catch (Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
 }

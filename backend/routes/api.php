@@ -31,6 +31,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // Rutas Administrativas
     Route::apiResource('projects', ProjectController::class);
     Route::apiResource('activities', ActivityController::class);
+    
+    // PASO 10: Habilitamos la ruta de exportación (Debe ir antes del apiResource para evitar colisiones de rutas)
+    Route::get('/donations/export', [DonationController::class, 'exportCSV']);
     Route::apiResource('donations', DonationController::class)->except(['checkout']);
     
     Route::post('/logout', [AuthController::class, 'logout']);
