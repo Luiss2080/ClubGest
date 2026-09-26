@@ -135,3 +135,35 @@ No hay pruebas de las ventanas ni de integración contra SQL Server. CI (`.githu
 Sin licencia definida: todos los derechos reservados por defecto.
 
 <div align="center"><sub>Hecho por Luiss2080 · C# · Windows Forms · SQL Server</sub></div>
+
+---
+
+# 🌐 ClubGest - Nueva Generación (Plataforma Web)
+
+Este repositorio ahora incluye también la evolución del sistema hacia una plataforma web integral, diseñada bajo principios de Arquitectura Limpia (Hexagonal).
+
+## 🚀 Stack Tecnológico (Web)
+- **Backend (API RESTful):** Laravel 11, Sanctum (Seguridad JWT), Servicios Desacoplados.
+- **Frontend (Web App):** Next.js (App Router), React 18, TailwindCSS v4, TypeScript.
+- **Pagos y Fintech:** Integración nativa con Stripe Checkout y Webhooks.
+
+## ⚙️ Módulos y Capacidades Añadidas
+1. **Sistema Financiero de Bucle Cerrado (Stripe):** Cobros seguros (PCI Compliance), Webhooks automatizados y motor de reportes financieros exportables en CSV.
+2. **Interfaz Ultra-Premium (UI/UX):** Efectos Glassmorphism, Dark Mode Nativo inteligente, Paleta de Comandos Global (Omnibar con `Ctrl+K`) y un Chatbot IA.
+3. **Seguridad Avanzada:** RBAC (Roles) para Voluntarios y Administradores, y validación estricta (bloqueo de archivos maliciosos).
+
+## 🛠️ Instalación (Entorno Web Local)
+```bash
+# 1. Levantar el Backend (Laravel)
+cd backend
+composer install
+cp .env.example .env
+php artisan key:generate
+php artisan migrate --seed
+php artisan serve
+
+# 2. Levantar el Frontend (Next.js)
+cd frontend
+npm install
+npm run dev
+```
